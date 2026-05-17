@@ -1,8 +1,13 @@
 from pytrends.request import TrendReq
-import requests
+import smtplib
+import os
 from datetime import datetime
 
-PHONE = "4693389280"
+PHONE        = "4693389280"
+CARRIER_GATE = "tmomail.net"
+TO_EMAIL     = f"{PHONE}@{CARRIER_GATE}"
+GMAIL_USER   = os.environ["GMAIL_USER"]
+GMAIL_PASS   = os.environ["GMAIL_APP_PASSWORD"]
 
 SEED_KEYWORDS = [
     "JDM parts",
@@ -40,12 +45,10 @@ def get_trends():
     return results[:10]
 
 def send_sms(message):
-    resp = requests.post("https://textbelt.com/text", {
-        "phone": PHONE,
-        "message": message,
-        "key": "textbelt",
-    })
-    print(resp.json())
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(GMAIL_USER, GMAIL_PASS)
+        server.sendmail(GMAIL_USER, TO_EMAIL, message)
+    print("SMS sent via email gateway.")
 
 def main():
     trends = get_trends()
@@ -53,7 +56,6 @@ def main():
     lines = [f"Auto Trends {date_str}:"]
     for i, item in enumerate(trends, 1):
         lines.append(f"{i}. {item['query']}")
-    lines.append("-- via Google Trends")
     send_sms("\n".join(lines))
 
 if __name__ == "__main__":
